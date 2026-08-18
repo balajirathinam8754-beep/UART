@@ -1,0 +1,60 @@
+module tb_top;
+
+    logic clk;
+
+    uart_if uart_vif(clk);
+
+    uart_tx #(
+        .clk_per_bit(217)
+    ) tx_dut (
+
+        .clk      (clk),
+        .rst      (uart_vif.rst),
+        .tx_start (uart_vif.tx_start),
+        .tx_data  (uart_vif.tx_data),
+        .tx       (uart_vif.tx),
+        .tx_busy  (uart_vif.tx_busy)
+
+    );
+
+    uart_rx #(
+        .CLKS_PER_BIT(217)
+    ) rx_dut (
+
+        .clk      (clk),
+        .rst      (uart_vif.rst),
+        .rx       (uart_vif.tx),
+        .rx_data  (uart_vif.rx_data),
+        .rx_done  (uart_vif.rx_done)
+
+    );
+
+    initial begin
+        clk = 0;
+        forever #5 clk = ~clk;
+    end
+
+    initial begin
+
+        uart_vif.rst = 1;
+
+        #100;
+
+        uart_vif.rst = 0;
+
+    end
+
+    initial begin
+
+        uvm_config_db#(virtual uart_if)::set(
+            null,
+            "*",
+            "vif",
+            uart_vif
+        );
+
+        run_test("uart_test");
+
+    end
+
+endmodule
