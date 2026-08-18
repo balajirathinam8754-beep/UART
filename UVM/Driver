@@ -1,0 +1,53 @@
+class uart_driver extends uvm_driver #(uart_sequence_item);
+
+    `uvm_component_utils(uart_driver)
+
+    virtual uart_if vif;
+
+    function new(
+        string name = "uart_driver",
+        uvm_component parent = null
+    );
+        super.new(name, parent);
+    endfunction
+
+    function void build_phase(uvm_phase phase);
+
+        super.build_phase(phase);
+
+        if (!uvm_config_db#(virtual uart_if)::get(
+            this,
+            "",
+            "vif",
+            vif
+        ))
+            `uvm_fatal("DRV", "UART interface not found")
+
+    endfunction
+
+    task run_phase(uvm_phase phase);
+
+        uart_sequence_item req;
+
+        forever begin
+
+            seq_item_port.get_next_item(req);
+
+            @(posedge vif.clk);
+
+            vif.tx_data  <= req.tx_data;
+            vif.tx_start <= 1'b1;
+
+            @(posedge vif.clk);
+
+            vif.tx_start <= 1'b0;
+
+            wait(vif.tx_busy == 1'b0);
+
+            seq_item_port.item_done();
+
+        end
+
+    endtask
+
+endclass
